@@ -3,30 +3,526 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Tetricide</title>
+<title>Tetricide — the work that's left after AI</title>
 <link rel="manifest" href="manifest.json" />
 <meta name="theme-color" content="#0b0d12" />
 <style>
-  html, body {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    background: #0b0d12;
-    color: #e6e9ef;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
+  :root {
+    --bg: #0b0d12;
+    --panel: #13161d;
+    --panel-2: #1b1f29;
+    --ink: #e6e9ef;
+    --muted: #9aa3b2;
+    --accent: #7dd3fc;
+    --danger: #f87171;
+    --grid: #1f2430;
+    --I: #22d3ee;
+    --O: #facc15;
+    --T: #c084fc;
+    --S: #4ade80;
+    --Z: #f87171;
+    --L: #fb923c;
+    --J: #60a5fa;
   }
-  h1 { margin: 0 0 0.5rem; font-size: 2rem; letter-spacing: 0.02em; }
-  p  { margin: 0; color: #9aa3b2; max-width: 32rem; padding: 0 1.5rem; line-height: 1.5; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+  body { min-height: 100vh; display: flex; justify-content: center; padding: 1.25rem; }
+  .wrap { width: 100%; max-width: 1080px; display: grid; grid-template-columns: auto 1fr; gap: 1.25rem; align-items: start; }
+  @media (max-width: 820px) { .wrap { grid-template-columns: 1fr; } }
+
+  header { grid-column: 1 / -1; display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+  h1 { margin: 0; font-size: 1.5rem; letter-spacing: 0.02em; }
+  header p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+
+  .stage { background: var(--panel); border-radius: 14px; padding: 0.75rem; box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset; }
+  canvas { display: block; border-radius: 8px; background: #0f121a; }
+
+  .side { display: flex; flex-direction: column; gap: 1rem; }
+  .card { background: var(--panel); border-radius: 14px; padding: 1rem; }
+  .card h2 { margin: 0 0 0.6rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); font-weight: 600; }
+
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem 1rem; }
+  .stat .v { font-variant-numeric: tabular-nums; font-size: 1.35rem; }
+  .stat .k { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  .controls { display: flex; flex-direction: column; gap: 0.6rem; }
+  .row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  button {
+    appearance: none; border: 1px solid #2a3040; background: var(--panel-2); color: var(--ink);
+    padding: 0.55rem 0.8rem; border-radius: 8px; cursor: pointer; font: inherit; font-size: 0.9rem;
+    transition: background 120ms, border-color 120ms, transform 80ms;
+  }
+  button:hover { background: #232a38; border-color: #3a4357; }
+  button:active { transform: translateY(1px); }
+  button.primary { background: #0ea5b7; border-color: #0ea5b7; color: #06121a; font-weight: 600; }
+  button.primary:hover { background: #22c3d4; }
+  button.danger { border-color: #3a1f22; color: #fca5a5; }
+  button.danger:hover { background: #2a1517; }
+  button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  label.range { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.85rem; color: var(--muted); }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+
+  .pieces { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.35rem; }
+  .piece {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 0.4rem 0; border-radius: 8px; background: var(--panel-2); border: 1px solid #232a38;
+    font-size: 0.75rem; color: var(--muted); cursor: pointer; user-select: none;
+    transition: opacity 150ms, background 120ms;
+  }
+  .piece .dot { width: 14px; height: 14px; border-radius: 3px; margin-bottom: 0.25rem; }
+  .piece.off { opacity: 0.2; text-decoration: line-through; }
+  .piece:hover { background: #232a38; }
+
+  .narr { color: var(--muted); font-size: 0.9rem; line-height: 1.45; min-height: 2.6rem; }
+  .narr strong { color: var(--ink); }
+
+  .stage-tag { display: inline-block; padding: 0.15rem 0.55rem; border-radius: 999px; background: #1f2937; color: var(--accent); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; }
+  footer { grid-column: 1 / -1; color: #5b6476; font-size: 0.8rem; text-align: center; margin-top: 0.5rem; }
+  a { color: var(--accent); }
 </style>
 </head>
 <body>
-  <main>
-    <h1>Tetricide</h1>
-    <p>A simulation of what happens to work when AI takes the easy pieces away.</p>
-  </main>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Tetricide</h1>
+      <p>A simulation of the work that's left after AI takes the easy pieces.</p>
+    </div>
+    <span class="stage-tag" id="stageTag">Stage 0 — baseline</span>
+  </header>
+
+  <div class="stage">
+    <canvas id="board" width="300" height="600"></canvas>
+  </div>
+
+  <div class="side">
+    <div class="card">
+      <h2>Run</h2>
+      <div class="controls">
+        <div class="row">
+          <button id="play" class="primary">Start</button>
+          <button id="reset">Reset</button>
+          <button id="auto" title="Auto-advance stages: gradually remove easy pieces and speed up">Auto-escalate</button>
+        </div>
+        <label class="range">
+          Speed <span id="speedLabel" style="color:var(--ink)">1.0×</span>
+          <input id="speed" type="range" min="1" max="20" value="4" />
+        </label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Stats</h2>
+      <div class="stats">
+        <div class="stat"><div class="k">Pieces</div><div class="v" id="stPieces">0</div></div>
+        <div class="stat"><div class="k">Lines</div><div class="v" id="stLines">0</div></div>
+        <div class="stat"><div class="k">Height</div><div class="v" id="stHeight">0</div></div>
+        <div class="stat"><div class="k">Tops out in</div><div class="v" id="stTopout">—</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Pieces the worker still gets</h2>
+      <div class="pieces" id="pieces"></div>
+      <p class="narr" id="narr">
+        Click a piece to remove it. Or press <strong>Auto-escalate</strong> and watch: AI eats the easy work first, speed rises, and what's left is all S's and Z's at double time.
+      </p>
+    </div>
+  </div>
+
+  <footer>
+    Tetricide — a teaching tool by <a href="https://clarkeching.com">Clarke Ching</a>.
+  </footer>
+</div>
+
+<script>
+(() => {
+  const COLS = 10, ROWS = 20;
+  const canvas = document.getElementById('board');
+  const ctx = canvas.getContext('2d');
+
+  const PIECES = {
+    I: { color: getCss('--I'), rot: [
+      [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
+      [[0,0,1,0],[0,0,1,0],[0,0,1,0],[0,0,1,0]],
+    ], easiness: 1 },
+    O: { color: getCss('--O'), rot: [
+      [[1,1],[1,1]],
+    ], easiness: 2 },
+    L: { color: getCss('--L'), rot: [
+      [[0,0,1],[1,1,1],[0,0,0]],
+      [[1,0,0],[1,0,0],[1,1,0]],
+      [[0,0,0],[1,1,1],[1,0,0]],
+      [[1,1,0],[0,1,0],[0,1,0]],
+    ], easiness: 3 },
+    J: { color: getCss('--J'), rot: [
+      [[1,0,0],[1,1,1],[0,0,0]],
+      [[1,1,0],[1,0,0],[1,0,0]],
+      [[0,0,0],[1,1,1],[0,0,1]],
+      [[0,1,0],[0,1,0],[1,1,0]],
+    ], easiness: 4 },
+    T: { color: getCss('--T'), rot: [
+      [[0,1,0],[1,1,1],[0,0,0]],
+      [[0,1,0],[0,1,1],[0,1,0]],
+      [[0,0,0],[1,1,1],[0,1,0]],
+      [[0,1,0],[1,1,0],[0,1,0]],
+    ], easiness: 5 },
+    S: { color: getCss('--S'), rot: [
+      [[0,1,1],[1,1,0],[0,0,0]],
+      [[1,0,0],[1,1,0],[0,1,0]],
+    ], easiness: 6 },
+    Z: { color: getCss('--Z'), rot: [
+      [[1,1,0],[0,1,1],[0,0,0]],
+      [[0,0,1],[0,1,1],[0,1,0]],
+    ], easiness: 7 },
+  };
+  const PIECE_KEYS = Object.keys(PIECES);
+
+  function getCss(v) {
+    return getComputedStyle(document.documentElement).getPropertyValue(v).trim() || '#fff';
+  }
+
+  let grid, active, nextKey, enabled, speedMult, running, tickAcc, lastTs, pieces, lines, toppedOut, gameOverFlash, autoEscalate, autoTimer, stage;
+
+  function init() {
+    grid = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+    active = null;
+    nextKey = null;
+    enabled = new Set(PIECE_KEYS);
+    speedMult = parseFloat(document.getElementById('speed').value);
+    running = false;
+    tickAcc = 0; lastTs = 0;
+    pieces = 0; lines = 0; toppedOut = false; gameOverFlash = 0;
+    autoEscalate = false; autoTimer = 0; stage = 0;
+    renderPieces();
+    updateStage();
+    spawn();
+    draw();
+    updateStats();
+  }
+
+  function enabledList() {
+    return PIECE_KEYS.filter(k => enabled.has(k));
+  }
+
+  function pickNext() {
+    const list = enabledList();
+    if (!list.length) return null;
+    return list[Math.floor(Math.random() * list.length)];
+  }
+
+  function spawn() {
+    if (toppedOut) return;
+    const key = nextKey || pickNext();
+    nextKey = pickNext();
+    if (!key) { active = null; return; }
+    const shape = PIECES[key].rot[0];
+    const w = shape[0].length;
+    const piece = {
+      key, rotation: 0,
+      x: Math.floor((COLS - w) / 2),
+      y: -topEmptyRows(shape),
+    };
+    if (collides(piece, grid)) { toppedOut = true; gameOverFlash = 0.6; running = false; syncPlayButton(); }
+    active = piece;
+    planMove();
+  }
+
+  function topEmptyRows(shape) {
+    let r = 0;
+    for (let i = 0; i < shape.length; i++) {
+      if (shape[i].some(v => v)) break;
+      r++;
+    }
+    return r;
+  }
+
+  function cellsOf(piece) {
+    const shape = PIECES[piece.key].rot[piece.rotation % PIECES[piece.key].rot.length];
+    const out = [];
+    for (let r = 0; r < shape.length; r++)
+      for (let c = 0; c < shape[r].length; c++)
+        if (shape[r][c]) out.push([piece.x + c, piece.y + r]);
+    return out;
+  }
+
+  function collides(piece, g) {
+    for (const [x, y] of cellsOf(piece)) {
+      if (x < 0 || x >= COLS || y >= ROWS) return true;
+      if (y >= 0 && g[y][x]) return true;
+    }
+    return false;
+  }
+
+  function lockPiece() {
+    for (const [x, y] of cellsOf(active)) {
+      if (y < 0) { toppedOut = true; gameOverFlash = 0.6; running = false; syncPlayButton(); return; }
+      grid[y][x] = active.key;
+    }
+    clearLines();
+    pieces++;
+    spawn();
+  }
+
+  function clearLines() {
+    let cleared = 0;
+    for (let r = ROWS - 1; r >= 0; r--) {
+      if (grid[r].every(v => v)) {
+        grid.splice(r, 1);
+        grid.unshift(Array(COLS).fill(null));
+        cleared++;
+        r++;
+      }
+    }
+    if (cleared) lines += cleared;
+  }
+
+  // Simple heuristic auto-player: evaluate each (rotation, x), drop, score.
+  function planMove() {
+    if (!active) return;
+    const rotCount = PIECES[active.key].rot.length;
+    let best = null;
+    for (let r = 0; r < rotCount; r++) {
+      for (let x = -3; x <= COLS; x++) {
+        const cand = { key: active.key, rotation: r, x, y: active.y };
+        if (collides(cand, grid)) continue;
+        // drop
+        let yy = cand.y;
+        while (!collides({ ...cand, y: yy + 1 }, grid)) yy++;
+        const dropped = { ...cand, y: yy };
+        if (dropped.y < 0 && cellsOf(dropped).some(([_, y]) => y < 0)) continue;
+        const score = evalPlacement(dropped);
+        if (!best || score > best.score) best = { rotation: r, x, score };
+      }
+    }
+    active._plan = best;
+  }
+
+  function evalPlacement(piece) {
+    const sim = grid.map(row => row.slice());
+    for (const [x, y] of cellsOf(piece)) {
+      if (y >= 0 && y < ROWS && x >= 0 && x < COLS) sim[y][x] = piece.key;
+    }
+    let cleared = 0;
+    for (let r = ROWS - 1; r >= 0; r--) {
+      if (sim[r].every(v => v)) { sim.splice(r, 1); sim.unshift(Array(COLS).fill(null)); cleared++; r++; }
+    }
+    const heights = Array(COLS).fill(0);
+    for (let c = 0; c < COLS; c++) {
+      for (let r = 0; r < ROWS; r++) {
+        if (sim[r][c]) { heights[c] = ROWS - r; break; }
+      }
+    }
+    let agg = 0, holes = 0, bump = 0;
+    for (let c = 0; c < COLS; c++) {
+      agg += heights[c];
+      if (c > 0) bump += Math.abs(heights[c] - heights[c - 1]);
+      let seenBlock = false;
+      for (let r = 0; r < ROWS; r++) {
+        if (sim[r][c]) seenBlock = true;
+        else if (seenBlock) holes++;
+      }
+    }
+    // Dellacherie-ish weights
+    return (cleared * 0.76) - (agg * 0.51) - (holes * 0.36) - (bump * 0.18);
+  }
+
+  function step() {
+    if (toppedOut || !active) return;
+    // Apply planned move, one step per tick: rotate, then horizontal, then drop by 1.
+    const plan = active._plan;
+    if (plan) {
+      if (active.rotation !== plan.rotation) {
+        const cand = { ...active, rotation: plan.rotation };
+        if (!collides(cand, grid)) active.rotation = plan.rotation;
+      } else if (active.x !== plan.x) {
+        const dir = plan.x > active.x ? 1 : -1;
+        const cand = { ...active, x: active.x + dir };
+        if (!collides(cand, grid)) active.x += dir; else { active._plan = null; planMove(); return; }
+      } else {
+        const cand = { ...active, y: active.y + 1 };
+        if (collides(cand, grid)) lockPiece(); else active.y++;
+      }
+    } else {
+      const cand = { ...active, y: active.y + 1 };
+      if (collides(cand, grid)) lockPiece(); else active.y++;
+    }
+  }
+
+  // Rendering
+  const CELL = 30;
+  function draw() {
+    ctx.fillStyle = '#0f121a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // grid lines
+    ctx.strokeStyle = '#1b2030';
+    ctx.lineWidth = 1;
+    for (let c = 0; c <= COLS; c++) {
+      ctx.beginPath(); ctx.moveTo(c * CELL + 0.5, 0); ctx.lineTo(c * CELL + 0.5, ROWS * CELL); ctx.stroke();
+    }
+    for (let r = 0; r <= ROWS; r++) {
+      ctx.beginPath(); ctx.moveTo(0, r * CELL + 0.5); ctx.lineTo(COLS * CELL, r * CELL + 0.5); ctx.stroke();
+    }
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (grid[r][c]) drawCell(c, r, PIECES[grid[r][c]].color, 1);
+      }
+    }
+    if (active) {
+      // ghost
+      let gy = active.y;
+      while (!collides({ ...active, y: gy + 1 }, grid)) gy++;
+      for (const [x, y] of cellsOf({ ...active, y: gy })) if (y >= 0) drawCell(x, y, PIECES[active.key].color, 0.18);
+      for (const [x, y] of cellsOf(active)) if (y >= 0) drawCell(x, y, PIECES[active.key].color, 1);
+    }
+    if (toppedOut) {
+      ctx.fillStyle = `rgba(248,113,113,${0.18 + Math.abs(Math.sin(Date.now() / 300)) * 0.15})`;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#fca5a5';
+      ctx.font = 'bold 28px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('OVERWHELMED', canvas.width / 2, canvas.height / 2 - 8);
+      ctx.fillStyle = '#f1d1d3';
+      ctx.font = '14px -apple-system, sans-serif';
+      ctx.fillText('Press Reset to rerun', canvas.width / 2, canvas.height / 2 + 18);
+    }
+  }
+
+  function drawCell(x, y, color, alpha) {
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = color;
+    ctx.fillRect(x * CELL + 1, y * CELL + 1, CELL - 2, CELL - 2);
+    ctx.globalAlpha = Math.min(1, alpha + 0.15);
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    ctx.fillRect(x * CELL + 1, y * CELL + 1, CELL - 2, 3);
+    ctx.globalAlpha = 1;
+  }
+
+  // Stats + UI wiring
+  function stackHeight() {
+    for (let r = 0; r < ROWS; r++) if (grid[r].some(v => v)) return ROWS - r;
+    return 0;
+  }
+  function topoutRoom() {
+    const h = stackHeight();
+    return Math.max(0, ROWS - h - 2);
+  }
+  function updateStats() {
+    document.getElementById('stPieces').textContent = pieces;
+    document.getElementById('stLines').textContent = lines;
+    document.getElementById('stHeight').textContent = stackHeight();
+    document.getElementById('stTopout').textContent = toppedOut ? '0' : topoutRoom();
+  }
+
+  function renderPieces() {
+    const wrap = document.getElementById('pieces');
+    wrap.innerHTML = '';
+    for (const k of PIECE_KEYS) {
+      const el = document.createElement('div');
+      el.className = 'piece' + (enabled.has(k) ? '' : ' off');
+      el.innerHTML = `<div class="dot" style="background:${PIECES[k].color}"></div>${k}`;
+      el.title = enabled.has(k) ? `Click to remove ${k}` : `Click to bring ${k} back`;
+      el.onclick = () => {
+        if (enabled.has(k)) enabled.delete(k); else enabled.add(k);
+        if (enabled.size === 0) enabled.add(k);
+        renderPieces();
+        updateNarr();
+      };
+      wrap.appendChild(el);
+    }
+  }
+
+  function updateNarr() {
+    const out = PIECE_KEYS.filter(k => !enabled.has(k));
+    const el = document.getElementById('narr');
+    if (out.length === 0) {
+      el.innerHTML = "All pieces available. Click a piece to simulate AI taking that work away.";
+    } else if (out.length >= 5) {
+      el.innerHTML = `Only the <strong>hard</strong> pieces are left. This is what it feels like when AI has eaten the easy work.`;
+    } else {
+      el.innerHTML = `AI has taken <strong>${out.join(', ')}</strong>. The worker is left with what's harder to place.`;
+    }
+  }
+
+  function updateStage() {
+    const tag = document.getElementById('stageTag');
+    const removed = PIECE_KEYS.length - enabled.size;
+    const sp = speedMult;
+    let label = `Stage ${stage}`;
+    if (removed === 0 && sp <= 2) label += ' — baseline';
+    else if (removed <= 2) label += ' — AI assists';
+    else if (removed <= 4) label += ' — AI takes over routine work';
+    else label += ' — only the hard stuff left';
+    tag.textContent = label;
+  }
+
+  // Auto-escalate: every ~8 real seconds, remove the easiest remaining piece and bump speed.
+  const AUTO_EVERY_MS = 8000;
+  function tickAutoEscalate(dt) {
+    if (!autoEscalate) return;
+    autoTimer += dt;
+    if (autoTimer >= AUTO_EVERY_MS) {
+      autoTimer = 0;
+      const remaining = enabledList().sort((a,b) => PIECES[a].easiness - PIECES[b].easiness);
+      if (remaining.length > 2) enabled.delete(remaining[0]);
+      speedMult = Math.min(20, speedMult + 1.5);
+      document.getElementById('speed').value = speedMult;
+      document.getElementById('speedLabel').textContent = (speedMult / 4).toFixed(1) + '×';
+      stage++;
+      renderPieces();
+      updateNarr();
+      updateStage();
+    }
+  }
+
+  function loop(ts) {
+    if (!lastTs) lastTs = ts;
+    const dt = ts - lastTs;
+    lastTs = ts;
+    if (running && !toppedOut) {
+      tickAcc += dt;
+      const tickMs = Math.max(40, 600 / speedMult);
+      while (tickAcc >= tickMs) { step(); tickAcc -= tickMs; }
+      tickAutoEscalate(dt);
+    }
+    draw();
+    updateStats();
+    requestAnimationFrame(loop);
+  }
+
+  // UI
+  const playBtn = document.getElementById('play');
+  function syncPlayButton() {
+    playBtn.textContent = toppedOut ? 'Overwhelmed' : (running ? 'Pause' : 'Start');
+    playBtn.disabled = toppedOut;
+  }
+  playBtn.onclick = () => {
+    if (toppedOut) return;
+    running = !running; lastTs = 0; syncPlayButton();
+  };
+  document.getElementById('reset').onclick = () => {
+    init();
+    running = true; lastTs = 0; syncPlayButton();
+  };
+  document.getElementById('auto').onclick = () => {
+    autoEscalate = !autoEscalate;
+    autoTimer = 0;
+    document.getElementById('auto').textContent = autoEscalate ? 'Auto-escalate: on' : 'Auto-escalate';
+  };
+  const speedInput = document.getElementById('speed');
+  const speedLabel = document.getElementById('speedLabel');
+  speedInput.addEventListener('input', () => {
+    speedMult = parseFloat(speedInput.value);
+    speedLabel.textContent = (speedMult / 4).toFixed(1) + '×';
+    updateStage();
+  });
+
+  init();
+  running = false; syncPlayButton();
+  speedLabel.textContent = (speedMult / 4).toFixed(1) + '×';
+  requestAnimationFrame(loop);
+})();
+</script>
 </body>
 </html>
